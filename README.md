@@ -1,10 +1,11 @@
 # NFT-Collateralized Lending Platform - Diamond Contract Architecture
 
-This project is a decentralized lending platform that allows users to collateralize NFTs in exchange for cryptocurrency loans. Built using the **Diamond Standard (EIP-2535)**, this contract system offers modular, upgradable, and gas-efficient smart contracts, enabling easy addition and modification of features.
+This project is a decentralized peer-2-peer lending platform that allows users to collateralize NFTs in exchange for cryptocurrency loans. Built using the **Diamond Standard (EIP-2535)**, this contract system offers modular, upgradable, and gas-efficient smart contracts, enabling easy addition and modification of features.
 
 ## Features
 
 - **NFT Collateralization**: Borrowers can lock up NFTs as collateral for loans.
+- **Lenders**: Lenders select any loan term they like and grant loan while waiting for interest.
 - **Diamond Contract Structure**: Using facets to modularize functionality, including `LoanFacet`, `LenderFacet`, and `RepaymentFacet`.
 - **Flexible Loan Terms**: Customizable loan amounts, durations, and interest rates.
 - **Escrow Management**: The platform acts as an escrow, transferring collateralized NFTs to lenders if loans are not repaid.
