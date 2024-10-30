@@ -52,6 +52,7 @@ contract LoanFacet {
         );
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+
         ds.loanCount++;
         uint256 currentLoanId = ds.loanCount;
 
@@ -74,7 +75,6 @@ contract LoanFacet {
 
         ds.BorrowerToLoanId[msg.sender].push(currentLoanId);
 
-
         emit LoanCreated(
             currentLoanId,
             msg.sender,
@@ -96,5 +96,10 @@ contract LoanFacet {
         LibDiamond.Loan storage loan = ds.loanIdToLoan[_loanId];
         require(loan.borrower != address(0), "Loan does not exist");
         return loan;
+    }
+
+    function getLoanCount() external view returns (uint256) {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        return ds.loanCount;
     }
 }

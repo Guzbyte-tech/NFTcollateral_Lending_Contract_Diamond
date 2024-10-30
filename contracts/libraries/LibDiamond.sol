@@ -78,6 +78,8 @@ library LibDiamond {
         mapping(bytes4 => bool) supportedInterfaces;
         // owner of the contract
         address contractOwner;
+
+        
         //NFT Collaterial Storage Starts Here
         uint256 loanCount;
         mapping(uint256 => Loan) loanIdToLoan;

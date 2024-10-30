@@ -119,6 +119,12 @@ contract DiamondDeployer is Test, DiamondUtils, IDiamondCut {
             })
         );
 
+        //upgrade diamond
+        IDiamondCut(address(diamond)).diamondCut(cut, address(0x0), "");
+
+        //call a function
+        DiamondLoupeFacet(address(diamond)).facetAddresses();
+
         assertEq(mockERC20.balanceOf(deployer), 10000 * 10 ** 18);
 
         // Transfer some mock tokens to lender for testing
@@ -128,12 +134,6 @@ contract DiamondDeployer is Test, DiamondUtils, IDiamondCut {
         // Mint NFT to the borrower
         // uint256 tokenId = mockERC721.mintNFT(borrower);
         // assertEq(mockERC721.ownerOf(tokenId), borrower);
-
-        //upgrade diamond
-        IDiamondCut(address(diamond)).diamondCut(cut, address(0x0), "");
-
-        //call a function
-        DiamondLoupeFacet(address(diamond)).facetAddresses();
     }
 
     function testCreateLoan() public {
@@ -165,25 +165,24 @@ contract DiamondDeployer is Test, DiamondUtils, IDiamondCut {
 
         console.log("Loan successfully created");
 
-        
+        uint256 loanId = LoanFacet(address(diamond)).getLoanCount();
 
-        // Check loan details stored in the diamond storage
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        uint256 loanId = ds.loanCount; // Loan ID after creation
-        console.log("Checking loan with ID:", loanId); // Should be 1 or greater now
+        LibDiamond.Loan memory loan = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
 
-        LibDiamond.Loan memory loan = ds.loanIdToLoan[loanId];
-        console.log(loan.borrower);
-        console.log(msg.sender);
-        console.log(address(diamond));
-        console.log(address(LoanContract));
+        // Check loan details
+        // console.log(loan);
+        // console.log("Loan ID:", loanId);
+        // console.log("Loan Borrower:", loan.borrower);
 
         vm.stopPrank();
-
-        // assertEq(loan.amount, 100 * 10 ** 18);
-        // assertEq(loan.borrower, borrower);
-        // assertEq(loan.status, LibDiamond.LoanStatus.Pending);
+        assertEq(loan.borrower, borrower);
+        assertEq(loan.amount, 10 * 10 ** 18);
+        assertEq(uint8(loan.status), uint8(LibDiamond.LoanStatus.Pending));
     }
+
+    function testLenderAcceptLoan() public {}
 
     function diamondCut(
         FacetCut[] calldata _diamondCut,
