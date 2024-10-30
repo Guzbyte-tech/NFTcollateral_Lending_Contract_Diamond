@@ -1,39 +1,92 @@
-[![Mentioned in Awesome Foundry](https://awesome.re/mentioned-badge-flat.svg)](https://github.com/crisgarner/awesome-foundry)
-# Foundry + Hardhat Diamonds
+# NFT-Collateralized Lending Platform - Diamond Contract Architecture
 
-This is a mimimal template for [Diamonds](https://github.com/ethereum/EIPs/issues/2535) which allows facet selectors to be generated on the go in solidity tests!
+This project is a decentralized lending platform that allows users to collateralize NFTs in exchange for cryptocurrency loans. Built using the **Diamond Standard (EIP-2535)**, this contract system offers modular, upgradable, and gas-efficient smart contracts, enabling easy addition and modification of features.
+
+## Features
+
+- **NFT Collateralization**: Borrowers can lock up NFTs as collateral for loans.
+- **Diamond Contract Structure**: Using facets to modularize functionality, including `LoanFacet`, `LenderFacet`, and `RepaymentFacet`.
+- **Flexible Loan Terms**: Customizable loan amounts, durations, and interest rates.
+- **Escrow Management**: The platform acts as an escrow, transferring collateralized NFTs to lenders if loans are not repaid.
+- **Time Simulation (for Testing)**: Loan expiry and repayment scenarios can be tested with time manipulation.
+
+## Project Structure
+
+### Contracts
+
+- **Diamond.sol**: Implements the core Diamond Proxy logic, delegating calls to facets based on function selectors.
+- **LoanFacet.sol**: Contains functionality for creating loan terms, transferring NFT collateral, and loan state management.
+- **LenderFacet.sol**: Handles lender interactions, such as accepting loans and force-closing on defaults.
+- **RepaymentFacet.sol**: Manages repayments, interest calculation, and updating loan status.
+- **LibDiamond.sol**: Manages shared state variables (loan data, mappings) and stores diamond-related data.
+
+### Testing
+
+Tests are written using **Foundry** to simulate different lending scenarios. Tests include:
+
+- Loan creation and validation.
+- Time-based tests for loan expiration.
+- Forced loan closures and collateral transfers.
+
+### Deployment & Testing Tools
+
+- **Foundry**: For testing, debugging, and simulating blockchain environments.
+- **OpenZeppelin Contracts**: For ERC20 and ERC721 token standards.
+- **Solidity Console**: Used in debugging to log state changes.
 
 ## Installation
 
-- Clone this repo
-- Install dependencies
+1. **Clone the repository:**
+   ```bash
+   git clone git@github.com:Guzbyte-tech/NFTcollateral_Lending_Contract_Diamond.git
+   cd NFTcollateral_Lending_Contract_Diamond
+   ```
+
+2. **Install Foundry:**
+   [Follow the Foundry installation guide here](https://book.getfoundry.sh/getting-started/installation.html).
+
+3. **Install dependencies:**
+   ```bash
+   forge install
+   ```
+
+4. **Compile the contracts:**
+   ```bash
+   forge build
+   ```
+
+## Running Tests
+
+Tests are located in the `test` directory and use the Foundry testing framework. Run all tests using:
 
 ```bash
-$ yarn && forge update
+forge test
 ```
 
-### Compile
+To simulate time in tests, Foundry’s `vm.warp` is used to control `block.timestamp`.
 
-```bash
-$ npx hardhat compile
-```
+## Example Usage
 
-## Deployment
+1. **Create a Loan**:
+   - Borrowers call `createLoanTerms` on the `LoanFacet`, specifying currency, amount, interest, and collateral NFT details.
+   
+2. **Lender Acceptance**:
+   - Lenders can accept a loan, initiating the loan duration and transferring tokens to the borrower.
 
-### Hardhat
+3. **Repayment**:
+   - Borrowers repay the loan within the duration specified, paying principal plus interest.
 
-```bash
-$ npx hardhat run scripts/deploy.js
-```
+4. **Force Closure**:
+   - If the borrower fails to repay, the lender can call `forceCloseLoan` to transfer the NFT collateral to their address.
 
-### Foundry
+## Contributing
 
-```bash
-$ forge t
-```
+1. Fork the project
+2. Create a feature branch: `git checkout -b feature-name`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature-name`
+5. Open a pull request
 
-`Note`: A lot of improvements are still needed so contributions are welcome!!
+## License
 
-Bonus: The [DiamondLoupefacet](contracts/facets/DiamondLoupeFacet.sol) uses an updated [LibDiamond](contracts/libraries//LibDiamond.sol) which utilises solidity custom errors to make debugging easier especially when upgrading diamonds. Take it for a spin!!
-
-Need some more clarity? message me [on twitter](https://twitter.com/Timidan_x), Or join the [EIP-2535 Diamonds Discord server](https://discord.gg/kQewPw2)
+This project is licensed under the MIT License.
