@@ -128,8 +128,8 @@ contract DiamondDeployer is Test, DiamondUtils, IDiamondCut {
         assertEq(mockERC20.balanceOf(deployer), 10000 * 10 ** 18);
 
         // Transfer some mock tokens to lender for testing
-        mockERC20.transfer(lender, 10 * 10 ** 18);
-        assertEq(mockERC20.balanceOf(lender), 10 * 10 ** 18);
+        mockERC20.transfer(lender, 100 * 10 ** 18);
+        assertEq(mockERC20.balanceOf(lender), 100 * 10 ** 18);
 
         // Mint NFT to the borrower
         // uint256 tokenId = mockERC721.mintNFT(borrower);
@@ -182,7 +182,176 @@ contract DiamondDeployer is Test, DiamondUtils, IDiamondCut {
         assertEq(uint8(loan.status), uint8(LibDiamond.LoanStatus.Pending));
     }
 
-    function testLenderAcceptLoan() public {}
+    function testLenderAcceptLoan() public {
+        vm.startPrank(borrower);
+        // Mint the NFT and approve it to the diamond contract
+        uint256 tokenId = mockERC721.mintNFT(borrower);
+        console.log("Minted Token ID:", tokenId);
+        mockERC721.approve(address(diamond), tokenId);
+        assertEq(
+            mockERC721.getApproved(tokenId),
+            address(diamond),
+            "Diamond contract should be approved"
+        );
+
+        LoanFacet(address(diamond)).createLoanTerms(
+            address(mockERC20),
+            30 days,
+            10 * 10 ** 18,
+            5,
+            address(mockERC721),
+            tokenId
+        );
+
+        console.log("Loan successfully created");
+
+        uint256 loanId = LoanFacet(address(diamond)).getLoanCount();
+
+        LibDiamond.Loan memory loan = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+
+        // Lender approves the ERC20 token for the diamond contract
+        vm.startPrank(lender);
+        mockERC20.approve(address(diamond), 100 * 10 ** 18);
+
+        // Lender accepts the loan
+        LenderFacetContract(address(diamond)).acceptLoanOffer(loanId);
+
+        // Check loan status and lender
+        LibDiamond.Loan memory loan2 = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+        assertEq(uint8(loan2.status), uint8(LibDiamond.LoanStatus.Active));
+        assertEq(loan2.lender, lender);
+    }
+
+    function testRepayLoan() public {
+        vm.startPrank(borrower);
+        uint256 tokenId = mockERC721.mintNFT(borrower);
+        console.log("Minted Token ID:", tokenId);
+        mockERC721.approve(address(diamond), tokenId);
+        assertEq(
+            mockERC721.getApproved(tokenId),
+            address(diamond),
+            "Diamond contract should be approved"
+        );
+
+        LoanFacet(address(diamond)).createLoanTerms(
+            address(mockERC20),
+            30 days,
+            10 * 10 ** 18,
+            5,
+            address(mockERC721),
+            tokenId
+        );
+
+        uint256 loanId = LoanFacet(address(diamond)).getLoanCount();
+
+        LibDiamond.Loan memory loan = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+        vm.stopPrank();
+
+        // Lender approves the ERC20 token for the diamond contract
+        vm.startPrank(lender);
+
+        mockERC20.approve(address(diamond), 100 * 10 ** 18);
+
+        // Lender accepts the loan
+        LenderFacetContract(address(diamond)).acceptLoanOffer(loanId);
+
+        uint256 lenderBalBefore = MockERC20(loan.currency).balanceOf(lender);
+
+        // Check loan status and lender
+        LibDiamond.Loan memory loan2 = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+        vm.stopPrank();
+
+        // // Move forward in time to simulate loan expiration
+        vm.warp(block.timestamp + 30 days);
+
+        //Borrower RepayLoan
+        vm.startPrank(borrower);
+        mockERC20.approve(address(diamond), 100 * 10 ** 18);
+        RepaymentFacetContract(address(diamond)).repayLoan(loanId);
+
+        // Check loan status and collateral transfer
+        LibDiamond.Loan memory loan3 = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+
+        uint256 lenderBalAfter = MockERC20(loan.currency).balanceOf(lender);
+        vm.stopPrank();
+
+        // console.log(lenderBalBefore);
+        // console.log(lenderBalAfter);
+
+        assertGt(lenderBalAfter, lenderBalBefore);
+        assertEq(uint8(loan3.status), uint8(LibDiamond.LoanStatus.Closed));
+        assertEq(mockERC721.ownerOf(tokenId), borrower);
+        assertEq(loan3.isRepaid, true);
+        assertEq(loan3.paidAt, block.timestamp);
+        vm.stopPrank();
+    }
+
+    function testForceCloseLoan() public {
+        vm.startPrank(borrower);
+        uint256 tokenId = mockERC721.mintNFT(borrower);
+        console.log("Minted Token ID:", tokenId);
+        mockERC721.approve(address(diamond), tokenId);
+        assertEq(
+            mockERC721.getApproved(tokenId),
+            address(diamond),
+            "Diamond contract should be approved"
+        );
+
+        LoanFacet(address(diamond)).createLoanTerms(
+            address(mockERC20),
+            30 days,
+            10 * 10 ** 18,
+            5,
+            address(mockERC721),
+            tokenId
+        );
+
+        uint256 loanId = LoanFacet(address(diamond)).getLoanCount();
+
+        LibDiamond.Loan memory loan = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+        vm.stopPrank();
+
+        // Lender approves the ERC20 token for the diamond contract
+        vm.startPrank(lender);
+        mockERC20.approve(address(diamond), 100 * 10 ** 18);
+
+        // Lender accepts the loan
+        LenderFacetContract(address(diamond)).acceptLoanOffer(loanId);
+
+        // Check loan status and lender
+        LibDiamond.Loan memory loan2 = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+
+        // // Move forward in time to simulate loan expiration
+        vm.warp(block.timestamp + 30 days);
+
+        // // Lender force closes the loan
+        LenderFacetContract(address(diamond)).forceCloseLoan(loanId);
+
+        // Check loan status and collateral transfer
+        LibDiamond.Loan memory loan3 = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+        assertEq(uint8(loan3.status), uint8(LibDiamond.LoanStatus.Closed));
+        assertEq(mockERC721.ownerOf(tokenId), lender);
+        vm.stopPrank();
+
+        // assertEq(uint8(loan2.status), uint8(LibDiamond.LoanStatus.Active));
+        // assertEq(loan2.lender, lender);
+    }
 
     function diamondCut(
         FacetCut[] calldata _diamondCut,

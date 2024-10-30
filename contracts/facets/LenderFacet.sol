@@ -62,11 +62,11 @@ contract LenderFacet {
         //Update Loan Status
         loan.status = LibDiamond.LoanStatus.Closed;
 
-         // Check that the borrower owns the NFT collateral
+         // Check that the contract has the NFT collateral
         IERC721 collateralToken = IERC721(loan.collateral);
         require(
-            collateralToken.ownerOf(loan.collateralTokenId) == msg.sender,
-            "LoanFacet: Borrower does not own the NFT"
+            collateralToken.ownerOf(loan.collateralTokenId) == address(this),
+            "LenderFacet: Contract does not own the NFT"
         );
 
         // Transfer NFT from borrower to contract for escrow

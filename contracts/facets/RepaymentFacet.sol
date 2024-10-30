@@ -42,7 +42,7 @@ contract RepaymentFacet {
         // Check that the contract has the NFT collateral
         IERC721 collateralToken = IERC721(loan.collateral);
         require(
-            collateralToken.ownerOf(loan.collateralTokenId) == msg.sender,
+            collateralToken.ownerOf(loan.collateralTokenId) == address(this),
             "RepayFacet: Contract does not own the NFT"
         );
 
