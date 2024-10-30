@@ -36,6 +36,12 @@ library LibDiamond {
 
     //NFT Collateral Lending Platform
 
+    enum LoanStatus {
+        Pending,
+        Active,
+        Closed
+    }
+
     struct Loan {
         uint256 loanId;
         address borrower;
@@ -47,7 +53,17 @@ library LibDiamond {
         uint256 interestRate; // Percentage ROI + amount loaned
         address collateral; //NFT to used as collateral;
         uint256 collateralTokenId;
+        LoanStatus status;
+        address lender;
+        uint256 acceptedAt;
+        uint256 paidAt;
     }
+
+    // struct Lender {
+    //     uint256 loanId;
+    //     address lender;
+    //     uint256 created_at;
+    // }
 
     struct DiamondStorage {
         // maps function selector to the facet address and
@@ -66,6 +82,7 @@ library LibDiamond {
         uint256 loanCount;
         mapping(uint256 => Loan) loanIdToLoan;
         mapping(address => uint256[]) BorrowerToLoanId; //Borrower to array of Loan Ids.
+        mapping(address => uint256[]) lendersToLoanId; // Lenders to array of Loan Ids.
     }
 
     function diamondStorage()

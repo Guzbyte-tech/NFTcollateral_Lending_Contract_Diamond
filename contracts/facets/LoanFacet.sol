@@ -2,8 +2,9 @@
 pragma solidity ^0.8.0;
 
 import {LibDiamond} from "../libraries/LibDiamond.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-contract BorrowerFaucet {
+contract LoanFacet {
     event LoanCreated(
         uint256 indexed loanId,
         address indexed _borrower,
@@ -38,6 +39,20 @@ contract BorrowerFaucet {
         require(_collateral != address(0), "Collateral address cannot be zero");
         require(_collateralTokenId > 0, "Invalid collateral token Id");
 
+        // Check that the borrower owns the NFT collateral
+        IERC721 collateralToken = IERC721(_collateral);
+        require(
+            collateralToken.ownerOf(_collateralTokenId) == msg.sender,
+            "LoanFacet: Borrower does not own the NFT"
+        );
+
+        // Transfer NFT from borrower to contract for escrow
+        collateralToken.safeTransferFrom(
+            msg.sender,
+            address(this),
+            _collateralTokenId
+        );
+
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         uint256 _loanCount = ds.loanCount + 1;
 
@@ -46,28 +61,41 @@ contract BorrowerFaucet {
             borrower: msg.sender,
             currency: _currency,
             loanDuration: _duration,
-            dueDate: _dueDate,
+            dueDate: block.timestamp + _duration,
             isRepaid: false,
             amount: _amount,
-            interestRate: _interestRate,
+            interestRate: _interestRate, //In percent
             collateral: _collateral,
-            collateralTokenId: _collateralTokenId
+            collateralTokenId: _collateralTokenId,
+            status: LibDiamond.LoanStatus.Pending,
+            lender: address(0),
+            acceptedAt: 0,
+            paidAt: 0
         });
 
         ds.BorrowerToLoanId[msg.sender].push(_loanCount);
         ds.loanCount++;
 
-        emit LoanCreated(_loanCount, msg.sender, _currency, _duration, _dueDate, _amount, _interestRate, _collateral, _collateralTokenId);
-
+        emit LoanCreated(
+            _loanCount,
+            msg.sender,
+            _currency,
+            _duration,
+            _dueDate,
+            _amount,
+            _interestRate,
+            _collateral,
+            _collateralTokenId
+        );
     }
 
-    //Borrower accepts loan offer here based on lon
-    //Once loan is accepted the NFT is transfered to the contract as an excrow
-    //Crypto is sent from lender to the borrower.
-    //Loan duration starts based on loan terms
-    function acceptLoanOffer() external {}
-
-    //Borrower must return amount plus interest
-    //Once complete the NFT is returned back
-    function repay() external {}
+    //Get Loan
+    function getLoan(
+        uint256 _loanId
+    ) external view returns (LibDiamond.Loan memory) {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        LibDiamond.Loan storage loan = ds.loanIdToLoan[_loanId];
+        require(loan.borrower != address(0), "Loan does not exist");
+        return loan;
+    }
 }

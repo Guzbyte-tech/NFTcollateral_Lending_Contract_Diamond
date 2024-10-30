@@ -10,8 +10,9 @@ pragma solidity ^0.8.0;
 
 import {LibDiamond} from "./libraries/LibDiamond.sol";
 import {IDiamondCut} from "./interfaces/IDiamondCut.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 
-contract Diamond {
+contract Diamond is IERC721Receiver {
     constructor(address _contractOwner, address _diamondCutFacet) payable {
         LibDiamond.setContractOwner(_contractOwner);
 
@@ -64,4 +65,15 @@ contract Diamond {
     }
 
     receive() external payable {}
+
+    // Full implementation of onERC721Received
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external pure override returns (bytes4) {
+        // Return the selector to confirm the transfer
+        return this.onERC721Received.selector;
+    }
 }
