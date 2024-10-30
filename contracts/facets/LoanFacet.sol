@@ -21,7 +21,7 @@ contract LoanFacet {
     function createLoanTerms(
         address _currency,
         uint256 _duration,
-        uint256 _dueDate,
+        // uint256 _dueDate,
         uint256 _amount,
         uint256 _interestRate,
         address _collateral,
@@ -29,8 +29,6 @@ contract LoanFacet {
     ) external {
         require(_currency != address(0), "Currency address cannot be zero");
         require(_duration > 0, "Invalid duration");
-        require(_dueDate > block.timestamp, "Invalid due date");
-        require(_dueDate == block.timestamp + _duration, "Invalid due date");
         require(_amount > 0, "Invalid amount");
         require(
             _interestRate >= 0 && _interestRate <= 100,
@@ -54,10 +52,11 @@ contract LoanFacet {
         );
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-        uint256 _loanCount = ds.loanCount + 1;
+        ds.loanCount++;
+        uint256 currentLoanId = ds.loanCount;
 
-        ds.loanIdToLoan[_loanCount] = LibDiamond.Loan({
-            loanId: _loanCount,
+        ds.loanIdToLoan[currentLoanId] = LibDiamond.Loan({
+            loanId: currentLoanId,
             borrower: msg.sender,
             currency: _currency,
             loanDuration: _duration,
@@ -73,15 +72,15 @@ contract LoanFacet {
             paidAt: 0
         });
 
-        ds.BorrowerToLoanId[msg.sender].push(_loanCount);
-        ds.loanCount++;
+        ds.BorrowerToLoanId[msg.sender].push(currentLoanId);
+
 
         emit LoanCreated(
-            _loanCount,
+            currentLoanId,
             msg.sender,
             _currency,
             _duration,
-            _dueDate,
+            block.timestamp + _duration,
             _amount,
             _interestRate,
             _collateral,
