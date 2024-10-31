@@ -17,6 +17,8 @@ contract LoanFacet {
         uint256 _collateralTokenId
     );
 
+    event LoanCancelled(uint256 _loanid, LibDiamond.LoanStatus _status);
+
     //Borrower ask for loan by specifying loan terms
     function createLoanTerms(
         address _currency,
@@ -86,6 +88,41 @@ contract LoanFacet {
             _collateral,
             _collateralTokenId
         );
+    }
+
+    function withdrawLoanOffer(uint256 _loanId) external onlyBorrower(_loanId) {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        LibDiamond.Loan storage loan = ds.loanIdToLoan[_loanId];
+        require(loan.borrower != address(0), "Loan does not exist");
+        require(
+            loan.status == LibDiamond.LoanStatus.Pending,
+            "Loan already in-progress.."
+        );
+        require(loan.dueDate > block.timestamp, "Loan has expired");
+
+        loan.status = LibDiamond.LoanStatus.Cancelled;
+
+        // Check that the contract has the NFT collateral
+        IERC721 collateralToken = IERC721(loan.collateral);
+        require(
+            collateralToken.ownerOf(loan.collateralTokenId) == address(this),
+            "Contract does not own the NFT"
+        );
+        // Transfer NFT from borrower to contract for escrow
+        collateralToken.safeTransferFrom(
+            address(this),
+            loan.borrower,
+            loan.collateralTokenId
+        );
+
+        emit LoanCancelled(_loanId, LibDiamond.LoanStatus.Cancelled);
+    }
+
+    modifier onlyBorrower(uint256 _loanId) {
+        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
+        LibDiamond.Loan storage loan = ds.loanIdToLoan[_loanId];
+        require(loan.borrower == msg.sender, "Not owner of this loan");
+        _;
     }
 
     //Get Loan

@@ -39,7 +39,8 @@ library LibDiamond {
     enum LoanStatus {
         Pending,
         Active,
-        Closed
+        Closed,
+        Cancelled
     }
 
     struct Loan {

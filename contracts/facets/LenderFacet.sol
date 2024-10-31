@@ -12,7 +12,11 @@ contract LenderFacet {
         uint256 amount
     );
 
-    event LoanClosed(uint256 indexed loanId, address lender, LibDiamond.LoanStatus);
+    event LoanClosed(
+        uint256 indexed loanId,
+        address lender,
+        LibDiamond.LoanStatus
+    );
 
     //Place Loan Offer for a loan
     function acceptLoanOffer(uint256 _loanId) external {
@@ -57,12 +61,11 @@ contract LenderFacet {
         require(msg.sender != address(0), "Address zero not allowed");
         require(!loan.isRepaid, "Loan has been paid");
         require(loan.lender == msg.sender, "You're not the lender.");
-        
 
         //Update Loan Status
         loan.status = LibDiamond.LoanStatus.Closed;
 
-         // Check that the contract has the NFT collateral
+        // Check that the contract has the NFT collateral
         IERC721 collateralToken = IERC721(loan.collateral);
         require(
             collateralToken.ownerOf(loan.collateralTokenId) == address(this),
@@ -76,7 +79,6 @@ contract LenderFacet {
             loan.collateralTokenId
         );
 
-        emit LoanClosed(_loanId, msg.sender, LibDiamond.LoanStatus.Closed);  
-
+        emit LoanClosed(_loanId, msg.sender, LibDiamond.LoanStatus.Closed);
     }
 }

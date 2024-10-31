@@ -46,7 +46,7 @@ contract RepaymentFacet {
             "RepayFacet: Contract does not own the NFT"
         );
 
-        // Transfer NFT from borrower to contract for escrow
+        // Transfer NFT from contract for escrow to borrower.
         collateralToken.safeTransferFrom(
             address(this),
             loan.borrower,

@@ -182,6 +182,46 @@ contract DiamondDeployer is Test, DiamondUtils, IDiamondCut {
         assertEq(uint8(loan.status), uint8(LibDiamond.LoanStatus.Pending));
     }
 
+    function testwithdrawLoanOffer() public {
+        // setUp();
+        // Lend some ERC721 tokens to the contract
+        vm.startPrank(borrower);
+
+        // Mint the NFT and approve it to the diamond contract
+        uint256 tokenId = mockERC721.mintNFT(borrower);
+        console.log("Minted Token ID:", tokenId);
+        mockERC721.approve(address(diamond), tokenId);
+
+        // Verify approval status
+        assertEq(
+            mockERC721.getApproved(tokenId),
+            address(diamond),
+            "Diamond contract should be approved"
+        );
+
+        // Call createLoanTerms through the diamond proxy
+        LoanFacet(address(diamond)).createLoanTerms(
+            address(mockERC20),
+            30 days,
+            10 * 10 ** 18,
+            5,
+            address(mockERC721),
+            tokenId
+        );
+
+        uint256 loanId = LoanFacet(address(diamond)).getLoanCount();
+
+        LoanFacet(address(diamond)).withdrawLoanOffer(loanId);
+        LibDiamond.Loan memory loan = LoanFacet(address(diamond)).getLoan(
+            loanId
+        );
+
+        vm.stopPrank();
+        // assertEq(loan.borrower, borrower);
+        // assertEq(loan.amount, 10 * 10 ** 18);
+        assertEq(uint8(loan.status), uint8(LibDiamond.LoanStatus.Cancelled));
+    }
+
     function testLenderAcceptLoan() public {
         vm.startPrank(borrower);
         // Mint the NFT and approve it to the diamond contract
